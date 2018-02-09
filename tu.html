@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <style media="screen">
+    .box {
+      width: 400px;
+      height: 150px;
+      border: 1px solid black;
+      background: #CCC;
+      text-align: center;
+      line-height: 150px;
+    }
+
+    #imgBox {
+      /* width: 400px; */
+      border: 1px solid #ccc;
+      display: inline-block;
+      /* height: 200px; */
+    }
+
+    #imgCanvas,
+    #resultCanvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+  <script>
+    window.onload = function() {
+      let oBox = document.querySelector('.box');
+      // 图片进入
+      oBox.ondragenter = function() {
+        oBox.innerHTML = '松手上传';
+      };
+      // 图片离开
+      oBox.ondragleave = function() {
+        oBox.innerHTML = '请拖到这里';
+      };
+      // 图片悬停
+      oBox.ondragover = function(event) { //只要鼠标还没松手、并且还没离开，一直不停发生
+        event.preventDefault();
+        return false;
+      };
+      // 放下图片
+      oBox.ondrop = function(ev) {
+        // 阻止默认事件
+        ev.preventDefault();
+        //调用FileReader对象
+        var fileReader = new FileReader();
+        //通过DataURL的方式返回图像
+        fileReader.readAsDataURL(ev.dataTransfer.files[0]);
+
+        // 用于展示上传图片的canvas
+        var theCanvas = document.getElementById("imgCanvas");
+        var canvasImg = theCanvas.getContext("2d");
+        //创建img对象
+        var img = new Image();
+
+        fileReader.onload = function(e) {
+          img.src = e.target.result;
+        }
+
+        img.onload = function() {
+          //将img对象的长款赋给canvas标签
+          // theCanvas.width = img.width;
+          // theCanvas.height = img.height;
+          canvasImg.drawImage(img, 0, 0);
+          // 截取后的图片box
+          var resultCanvas = document.getElementById("resultCanvas");
+          var resultImg = resultCanvas.getContext("2d");
+          // 初始截取图片大小
+          var cutData = canvasImg.getImageData(0, 0, 200, 200);
+          resultImg.putImageData(cutData, 0, 0);
+
+
+          var flag = false; //记录是否为点击状态的标记
+          var W = img.width;
+          var H = img.height;
+          var startX = 0;
+          var startY = 0;
+
+          //当鼠标被按下
+          theCanvas.addEventListener("mousedown", e => {
+            flag = true; //改变标记状态，置为点击状态
+            startX = e.clientX; //获得起始点横坐标
+            startY = e.clientY; //获得起始点纵坐标
+          })
+
+          //当鼠标在移动
+          theCanvas.addEventListener("mousemove", e => {
+            if (flag) {
+              canvasImg.clearRect(0, 0, W, H);
+              resultImg.clearRect(0, 0, cutData.width, cutData.height);
+              canvasImg.drawImage(img, 0, 0);
+              canvasImg.fillStyle = 'rgba(255,255,255,0.6)'; //设定为半透明的白色
+              canvasImg.fillRect(0, 0, e.clientX, startY); //矩形A
+              canvasImg.fillRect(e.clientX, 0, W, e.clientY); //矩形B
+              canvasImg.fillRect(startX, e.clientY, W - startX, H - e.clientY); //矩形C
+              canvasImg.fillRect(0, startY, startX, H - startY); //矩形D
+              cutData = canvasImg.getImageData(startX, startY, e.clientX - startX, e.clientY - startY);
+              resultImg.putImageData(cutData, 0, 0);
+            }
+          })
+
+          //当鼠标左键抬起
+          var resultFile = {}
+          theCanvas.addEventListener("mouseup", e => {
+            // resultCanvas.toBlob(blob => {
+            //   resultFile = blob;
+            //   console.log(blob); //Blob(1797) {size: 1797, type: "image/png"}
+            // });
+            flag = false;
+          });
+        }
+        // }
+
+
+        return false;
+      };
+    };
+  </script>
+</head>
+
+<body>
+  <div class="box">
+    请拖到这里
+  </div>
+  <!-- <img src="" alt="" id='imgBox' width="400" height="400"> -->
+  <canvas id="imgCanvas" width="400" height="400"></canvas>
+  <canvas id="resultCanvas" width="200" height="200"></canvas>
+</body>
+
+</html>
